@@ -1,4 +1,4 @@
-# Hiera::Yaml::Gather
+# hiera-yaml-gather
 
 Based on a query passed to the utility, parse and return a Hash of all configuration
 variables that correspond to the particular query string. The files parsed are based
@@ -20,13 +20,13 @@ Or install it yourself as:
 
 ## Usage
 
-Usage is dynamically altered based on the specified Hiera configuration file, but
-conforms to the following generic usage:
+Usage mimics the generic hiera usage minus providing a key to search for:
 
-hiera-yaml-gather <scope>
+    $ hiera-yaml-gather <scope>
 
 Where:
-<scope> is a list of key=val pairs used to discover configuration variables as
+
+scope is a list of scope=val pairs used to discover configuration variables as
 defined within the hiera.yaml configuration file
 
 ## Contributing

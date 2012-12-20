@@ -1,0 +1,96 @@
+#!/usr/bin/env ruby
+
+require 'hiera'
+require 'hiera/config'
+require 'optparse'
+require 'yaml'
+require 'pp'
+
+class OptParse
+  def self.parse(args)
+    options = {}
+    options[:hiera_config] = '/etc/hiera.yaml'
+
+    opts = OptionParser.new do |opts|
+      opts.banner = 'Usage: hiera-gather [options]'
+
+      opts.separator 'Optional:'
+
+      # directory containing Hiera configuration files
+      opts.on('-c', '--hiera-config FILE', 'File containing Hiera configuration settings') { |v| options[:hiera_config] = v }
+
+      opts.on_tail('-d', '--debug', 'Debug mode - print output') { |v| options[:debug] = true }
+
+      # list of options
+      opts.on_tail('-h', '--help', 'Show this message') { puts opts; exit }
+    end
+
+    # error handling for required (but missing) options and invalid parsing
+    begin
+      opts.parse! args
+    rescue OptionParser::InvalidOption, OptionParser::MissingArgument
+      puts $!.to_s
+      puts opts
+      exit
+    end
+
+    options
+  end
+end
+
+options = OptParse.parse(ARGV)
+
+# ensure the Hiera configuration file specified is valid
+unless File.exists? options[:hiera_config]
+  puts "Hiera directory #{options[:hiera_config]} does not exist"
+  puts "Please double-check your configuration"
+  exit 1
+end
+
+# initialize the configuration based on the user-defined options
+@config = Hiera::Config.load(options[:hiera_config])
+Hiera.logger = 'noop' unless options[:debug]
+
+Hiera.debug "Config settings: #{@config.inspect}"
+
+# ensure the Hiera directory specified is valid
+unless File.directory? @config[:yaml][:datadir]
+  puts "Hiera directory #{@config[:yaml][:datadir]} does not exist"
+  puts "Please double-check your configuration"
+  exit 1
+end
+
+# parse scope options
+options[:scope] = {}
+unless ARGV.empty?
+  ARGV.each do |arg|
+    if arg =~ /^(.+?)=(.+?)$/
+      options[:scope][$1] = $2
+    else
+      STDERR.puts "Don't know how to parse scope argument: #{arg}"
+      exit 1
+    end
+  end
+end
+Hiera.debug "Scope: #{options[:scope]}"
+
+# obtain yaml files given scope
+yaml_files = []
+Hiera::Backend.datasources(options[:scope]) do |datasource|
+  file = File.join [@config[:yaml][:datadir], "#{datasource}.yaml"]
+
+  Hiera.debug "Checking for file: #{file.inspect}"
+  yaml_files << file if File.exists? file
+end
+
+# parse variables in YAML files
+vars = {}
+yaml_files.each do |yaml_file|
+  Hiera.debug "Parsing YAML config file: #{yaml_file}"
+
+  YAML.load_file(yaml_file).each do |key, val|
+    vars[key] = val unless vars[key]
+  end
+end
+
+pp Hash[vars.sort]

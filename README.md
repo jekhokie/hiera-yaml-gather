@@ -1,6 +1,8 @@
 # Hiera::Yaml::Gather
 
-TODO: Write a gem description
+Based on a query passed to the utility, parse and return a Hash of all configuration
+variables that correspond to the particular query string. The files parsed are based
+on the Hierarchy specified in the Hiera configuration file.
 
 ## Installation
 
@@ -18,7 +20,14 @@ Or install it yourself as:
 
 ## Usage
 
-TODO: Write usage instructions here
+Usage is dynamically altered based on the specified Hiera configuration file, but
+conforms to the following generic usage:
+
+hiera-yaml-gather <scope>
+
+Where:
+<scope> is a list of key=val pairs used to discover configuration variables as
+defined within the hiera.yaml configuration file
 
 ## Contributing
 
